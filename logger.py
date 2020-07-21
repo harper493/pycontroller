@@ -26,7 +26,10 @@ class logger(object) :
             creation_time = os.path.getctime(filename)
             suffix = datetime.utcfromtimestamp(creation_time).strftime("%Y%m%dT%H%M%S")
             ff = filename.split('.')
-            new_filename = '.'.join(ff[:-1]) + f"_{suffix}.{ff[-1]}"
+            if len(ff) > 1 and '/' not in ff[-1]:
+                new_filename = '.'.join(ff[:-1]) + f"_{suffix}.{ff[-1]}"
+            else:
+                new_filename = f"{filename}_{suffix}"
             os.rename(filename, new_filename)
         try :
             self.logfile = open(filename, 'w')
