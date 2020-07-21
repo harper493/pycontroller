@@ -6,6 +6,7 @@ from time import localtime, strftime
 from simtime import simtime
 from utility import *
 from datetime import datetime
+import os
 
 logfile = None
 
@@ -20,7 +21,13 @@ class logger(object) :
 
     def __init__(self, filename=None, console=False, trace=None) :
         if filename is None :
-            filename = f'{LOG_PATH}{LOG_FILENAME}_{datetime.now().strftime("%Y%m%dT%H%M%S")}{LOG_EXT}'
+            filename = f'{LOG_PATH}{LOG_FILENAME}{LOG_EXT}'
+        if os.path.exists(filename):
+            creation_time = os.path.getctime(filename)
+            suffix = datetime.utcfromtimestamp(creation_time).strftime("%Y%m%dT%H%M%S")
+            ff = filename.split('.')
+            new_filename = '.'.join(ff[:-1]) + f"_{suffix}.{ff[-1]}"
+            os.rename(filename, new_filename)
         try :
             self.logfile = open(filename, 'w')
         except IOError :
