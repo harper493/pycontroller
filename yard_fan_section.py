@@ -41,8 +41,6 @@ class yard_fan_section(fan_section) :
         section.dispatch(self)
 
     def book(self, prev_sect, tr, dir) :
-        if simtime.time() > 30:
-            i = 1
         result = False
         if prev_sect!=self._get_unique_adjacent() :
             for urgent in [ False, True ] :
