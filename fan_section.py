@@ -13,6 +13,7 @@ from logger import log
 import re
 from utility import *
 from symbols import *
+from simtime import simtime
 
 arg_table = { 'orientation' : lambda obj, dir : parse_direction(dir),
               'description' : '',
@@ -120,13 +121,15 @@ class fan_section(section) :
         return '; '.join([ "%s:%s" % (xn, self._show_exit(xv)) \
                                    for xn,xv in self.exits.items() ])
         
-    def _get_next_section(self, sect) :
+    def _get_next_section(self, prev_sect) :
+        if simtime.time() > 30:
+            i = 1
         result = None
         if self.orientation == DIR_LEFT :
-            result = self.selected if sect==self.left.adjacent else self.left.adjacent
+            result = self.selected if prev_sect==self.left.adjacent else self.left.adjacent
         else :
-            result = self.selected if sect==self.right.adjacent else self.right.adjacent
-        log(self, "_get_next_section: sect %s selected %s result %s", sect, self.selected, result)
+            result = self.selected if prev_sect==self.right.adjacent else self.right.adjacent
+        log(self, "_get_next_section: prev_sect %s selected %s result %s", prev_sect, self.selected, result)
         return result
 
     def make_booking_v(self) :
@@ -139,18 +142,6 @@ class fan_section(section) :
 
     def leave_v(self) :
         self.selected = None
-
-    def __get_next_section(self, sect) :
-        if self.is_leftwards() :
-            if sect==self.left.adjacent :
-                return self.selected
-            else :
-                return self.left.adjacent
-        else :
-            if sect==self.right.adjacent :
-                return self.selected
-            else :
-                return self.right.adjacent
 
     def _get_unique_adjacent(self) :
         if self.orientation==DIR_LEFT :

@@ -60,7 +60,6 @@ class section(object) :
         self.direction = DIR_NONE
         self.position = 0
         self.prev_position = 0
-        self.try_next_sec = None
         self.terminating = False
         if self.terminus or self.hold :
             self.book_through = False
@@ -175,8 +174,6 @@ class section(object) :
         if self.manager :
             done, result = self.manager.book(self, sect, tr, dir)
         if done :
-            if result :
-                self.try_next_sect = self._get_next_section(sect)
             return result
         else :
             return self._book(sect, tr, dir)
@@ -186,31 +183,31 @@ class section(object) :
 
     def book_base(self, sect, tr, dir) :
         result = False
-        self.try_next_sec = self._get_next_section(sect)
         if self.can_book_through(sect, tr, dir) :
             self.make_booking(sect, tr, dir)
             result = True
         return result
 
-    def can_book(self, sect, tr, dir, urgent=False) :
+    def can_book(self, prev_sect, tr, dir, urgent=False) :
         done = result = False
         if self.manager :
-            done, result = self.manager.can_book(self, sect, tr, dir, urgent)
+            done, result = self.manager.can_book(self, prev_sect, tr, dir, urgent)
         if done :
             return result
         else :
-            return self._can_book(sect, tr, dir, urgent)
+            return self._can_book(prev_sect, tr, dir, urgent)
 
     def _can_book(self, sect, tr, dir, urgent) :
         return self.is_empty() and self.is_bookable(tr)
 
-    def can_book_through(self, sect, tr, dir, urgent=False) :
-        cb = self.can_book(sect, tr, dir, urgent)
+    def can_book_through(self, prev_sect, tr, dir, urgent=False) :
+        cb = self.can_book(prev_sect, tr, dir, urgent)
         cbt = False
-        assert(self.try_next_sec != self)
-        if not self.hold and self.try_next_sec :
-            self._log_me("can_book_through", "try_next %s", self.try_next_sec)
-            cbt = self.try_next_sec.can_book_through(self, tr, dir)
+        if not self.hold :
+            next_sect = self._get_next_section(prev_sect)
+            if next_sect:
+                self._log_me("can_book_through", "try_next %s", next_sect)
+                cbt = next_sect.can_book_through(self, tr, dir)
         result = cb and (cbt or not self.book_through)
         return result
 
@@ -225,18 +222,16 @@ class section(object) :
 
     def force_extend_booking(self) :
         result = False
-        if self.try_next_sec is None :
-            if self.direction==DIR_LEFT:
-                self.try_next_sec = self.left.adjacent
-            else :
-                assert(self.direction==DIR_RIGHT)
-                self.try_next_sec = self.right.adjacent
-        if self.try_next_sec and self.try_next_sec.is_empty() :
+        if self.direction==DIR_LEFT:
+            next_sec = self.left.adjacent
+        else :
+            assert(self.direction==DIR_RIGHT)
+            next_sec = self.right.adjacent
+        if next_sec and next_sec.is_empty() :
             assert(isinstance(self.my_train, train))
-            result = self.try_next_sec.book(self, self.my_train, self.direction)
+            result = next_sec.book(self, self.my_train, self.direction)
             if result :
-                self.next_section = self.try_next_sec
-                self.try_next_sec = None
+                self.next_section = next_sec
                 self._log_me("extended")
         return result
 
@@ -559,8 +554,8 @@ class section(object) :
         x = ''
         if extra :
             x = extra % args
-        log(self, "%s: next %s try %s prev %s dir %s state %s train '%s' %s%s pos %.1f %s", \
-            why, self.next_section, self.try_next_sec, self.prev_section, self.show_dir(), \
+        log(self, "%s: next %s prev %s dir %s state %s train '%s' %s%s pos %.1f %s", \
+            why, self.next_section, self.prev_section, self.show_dir(), \
             self.show_state(), self.my_train, \
             "H" if self.my_train and self.my_train.head==self else "", \
             "T" if self.my_train and self.my_train.tail==self else "", \

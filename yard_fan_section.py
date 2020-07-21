@@ -40,19 +40,19 @@ class yard_fan_section(fan_section) :
             self.my_train.activate(dir, cruise=True)
         section.dispatch(self)
 
-    def book(self, sect, tr, dir) :
+    def book(self, prev_sect, tr, dir) :
         if simtime.time() > 30:
             i = 1
         result = False
-        if sect==self._get_unique_adjacent() :
+        if prev_sect!=self._get_unique_adjacent() :
             for urgent in [ False, True ] :
-                if self.can_book(sect, tr, dir, urgent) :
+                if self.can_book(prev_sect, tr, dir, urgent) :
                     for s in self.sections[:self.section_robin] + self.sections[self.section_robin:] :
                         if s.can_book(self, tr, dir, urgent) :
                             self._log_me("book_yard", "siding %s", s)
                             result = True
                             self.set_route(s)
-                            self._book(sect, tr, dir)
+                            self._book(prev_sect, tr, dir)
                             break
                 if result :
                     break
@@ -60,8 +60,9 @@ class yard_fan_section(fan_section) :
             if self.section_robin >= len(self.sections) :
                 self.section_robin = 0
         else :
-            result = self._book(sect, tr, dir)
-        self._log_me("book yard_fan", "siding %s", result)
+            result = self._book(prev_sect, tr, dir)
+        if result:
+            self._log_me("book yard_fan")
         return result
         
             

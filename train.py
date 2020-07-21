@@ -99,6 +99,7 @@ class train(object) :
         self.last_speed_time = simtime.time()
         requested = speed
         limit = self.max_speed
+        print('$$$', limit, self.stoping_speed, type(limit), type(self.stopping_speed))
         if self.active :
             if cruise :
                 limit = min(limit, self.cruise_speed)
